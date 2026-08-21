@@ -1,16 +1,10 @@
 using System.Linq.Dynamic.Core;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using LocalDbScramble.Model;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.EntityFrameworkCore.Query.Internal;
-using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-public class ScrambleService(IDbContextFactory<TkmensTestContext> contextFactory, ILogger<ScrambleService> logger, IHostApplicationLifetime applicationLifetime) : BackgroundService
+public class ScrambleService(IDbContextFactory<DbContext> contextFactory, ILogger<ScrambleService> logger, IHostApplicationLifetime applicationLifetime) : BackgroundService
 {
     private string[] ColumnsToScramble = [];
     private string[] ColumnsToEmpty = [];
@@ -24,7 +18,7 @@ public class ScrambleService(IDbContextFactory<TkmensTestContext> contextFactory
         TablesToEmpty = await File.ReadAllLinesAsync("tablenamesempty.txt", stoppingToken);
         var triggersDisableScript = await File.ReadAllLinesAsync("DisableTriggers.txt", stoppingToken);
 
-        var members = typeof(TkmensTestContext).GetProperties();
+        var members = typeof(DbContext).GetProperties();
         var genericMethod = typeof(ScrambleService).GetMethod(nameof(ScrambleTable));
 
         List<Task> parallelTasks = new List<Task>();
