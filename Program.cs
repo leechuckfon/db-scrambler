@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using LocalDbScramble.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -22,7 +23,7 @@ builder.ConfigureServices(x =>
 
     x.AddPooledDbContextFactory<DbContext>(config =>
       {
-          config.UseSqlServer("<DatabaseConnectionString>");
+          config.UseSqlServer("Data Source=localhost\\SQLEXPRESS;Initial Catalog=OpenLane;Integrated Security=True;Pooling=False;Connect Timeout=30;Encrypt=True;Trust Server Certificate=True;Application Name=vscode-mssql;Application Intent=ReadWrite;Command Timeout=30");
       });
 
     x.AddHostedService<ScrambleService>();

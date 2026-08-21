@@ -46,6 +46,19 @@ public static class ScrambleExtensions
         }
         return decimal.Parse(sb.ToString());
     }
+    public static double Scramble(this double stringValue)
+    {
+        var sb = new StringBuilder("");
+        foreach (var character in stringValue.ToString())
+        {
+            switch (character)
+            {
+                case var _ when Regex.IsMatch(character.ToString(), "[0-9]"): sb.Append(GetRandomNumber()); break;
+                default: sb.Append(character); break;
+            }
+        }
+        return double.Parse(sb.ToString());
+    }
     public static bool Scramble(this bool scrambleValue)
     {
         Random r = new Random();
