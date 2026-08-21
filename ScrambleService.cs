@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Query.Internal;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -118,63 +119,53 @@ public class ScrambleService(IDbContextFactory<TkmensTestContext> contextFactory
                         continue;
                     }
 
-                    if (property.ColumnType.ToUpper().Contains("VARCHAR") || property.ColumnType.ToUpper().Contains("NCHAR"))
+                    switch (property.ColumnType.ToUpper())
                     {
-                        var castedValue = valueInMemory as string;
-                        if (string.IsNullOrWhiteSpace(castedValue) || string.IsNullOrEmpty(castedValue))
-                        {
-                            continue;
-                        }
-                        var scrambledValue = castedValue?.Scramble();
-                        logger.LogInformation($"Scrambled {property.ColumnName} value from [{valueInMemory}] to [{scrambledValue}]");
-                        setAccessor?.Invoke(dbValue, [scrambledValue]);
-                    }
-                    else
-                        if (property.ColumnType.ToUpper().Contains("INT"))
-                        {
-                            var castedValue = (int)valueInMemory;
-                            var scrambledValue = castedValue.Scramble();
-                            logger.LogInformation($"Scrambled {property.ColumnName} value from [{valueInMemory}] to [{scrambledValue}]");
-                            setAccessor?.Invoke(dbValue, [scrambledValue]);
-                        }
-                        else
-                            if (property.ColumnType.ToUpper().Contains("MONEY"))
+                        case string _ when property.ColumnType.ToUpper().Contains("VARCHAR") || property.ColumnType.ToUpper().Contains("NCHAR"):
+                            var stringCastedValue = valueInMemory as string;
+                            if (string.IsNullOrWhiteSpace(stringCastedValue) || string.IsNullOrEmpty(stringCastedValue))
                             {
-                                var castedValue = (decimal)valueInMemory;
-                                var scrambledValue = castedValue.Scramble();
-                                logger.LogInformation($"Scrambled {property.ColumnName} value from [{valueInMemory}] to [{scrambledValue}]");
-                                setAccessor?.Invoke(dbValue, [scrambledValue]);
+                                continue;
                             }
-                            else
-                                if (property.ColumnType.ToUpper().Contains("DATETIME"))
-                                {
-                                    var castedValue = (DateTime)valueInMemory;
-                                    var scrambledValue = castedValue.Scramble();
-                                    logger.LogInformation($"Scrambled {property.ColumnName} value from [{castedValue.ToShortTimeString()}] to [{scrambledValue.ToShortTimeString()}]");
-                                    setAccessor?.Invoke(dbValue, [scrambledValue]);
-                                }
-                                else
-                                    if (property.ColumnType.ToUpper().Contains("VARBINARY"))
-                                    {
-                                        // Empty
-                                        setAccessor?.Invoke(dbValue, [Enumerable.Empty<byte>().ToArray()]);
-                                    }
-                                else
-                                    if (property.ColumnType.ToUpper().Contains("BIT"))
-                                    {
-                                        var castedValue = (bool)valueInMemory;
-                                        var scrambledValue = castedValue.Scramble();
-                                        logger.LogInformation($"Scrambled {property.ColumnName} value from [{castedValue}] to [{scrambledValue}]");
-                                        setAccessor?.Invoke(dbValue, [scrambledValue]);
-                                    }
-                                    else
-                                    {
-                                        logger.LogError($"{property.ColumnType} is not supported");
-                                        return 1;
-                                    }
-
+                            var stringScrambledValue = stringCastedValue?.Scramble();
+                            logger.LogInformation($"Scrambled {property.ColumnName} value from [{valueInMemory}] to [{stringScrambledValue}]");
+                            setAccessor?.Invoke(dbValue, [stringScrambledValue]);
+                            break;
+                        case string _ when property.ColumnType.ToUpper().Contains("INT"):
+                            var intCastedValue = (int)valueInMemory;
+                            var intScrambledValue = intCastedValue.Scramble();
+                            logger.LogInformation($"Scrambled {property.ColumnName} value from [{valueInMemory}] to [{intScrambledValue}]");
+                            setAccessor?.Invoke(dbValue, [intScrambledValue]);
+                            break;
+                        case string _ when property.ColumnType.ToUpper().Contains("MONEY"):
+                            var decimalCastedValue = (decimal)valueInMemory;
+                            var decimalScrambledValue = decimalCastedValue.Scramble();
+                            logger.LogInformation($"Scrambled {property.ColumnName} value from [{valueInMemory}] to [{decimalScrambledValue}]");
+                            setAccessor?.Invoke(dbValue, [decimalScrambledValue]);
+                            break;
+                        case string _ when property.ColumnType.ToUpper().Contains("DATETIME"):
+                            var dateTimeCastedValue = (DateTime)valueInMemory;
+                            var dateTimeScrambledValue = dateTimeCastedValue.Scramble();
+                            logger.LogInformation($"Scrambled {property.ColumnName} value from [{dateTimeCastedValue.ToShortTimeString()}] to [{dateTimeScrambledValue.ToShortTimeString()}]");
+                            setAccessor?.Invoke(dbValue, [dateTimeScrambledValue]);
+                            break;
+                        case string _ when property.ColumnType.ToUpper().Contains("VARBINARY"):
+                            // Empty
+                            setAccessor?.Invoke(dbValue, [Enumerable.Empty<byte>().ToArray()]);
+                            break;
+                        case string _ when property.ColumnType.ToUpper().Contains("BIT"):
+                            var boolCastedValue = (bool)valueInMemory;
+                            var boolScrambledValue = boolCastedValue.Scramble();
+                            logger.LogInformation($"Scrambled {property.ColumnName} value from [{boolCastedValue}] to [{boolScrambledValue}]");
+                            setAccessor?.Invoke(dbValue, [boolScrambledValue]);
+                            break;
+                        default: 
+                            logger.LogError($"{property.ColumnType} is not supported");
+                            return 1;
+                    }
                 }
             }
+            
             await context.Database.CommitTransactionAsync(cancellationToken);
             logger.LogInformation("COMMIT TRANSACTION");
             await context.SaveChangesAsync(cancellationToken);
