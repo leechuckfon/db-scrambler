@@ -1,5 +1,6 @@
 using System.Linq.Dynamic.Core;
 using System.Reflection;
+using LocalDbScramble.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -17,12 +18,13 @@ public class ScrambleService(IDbContextFactory<DbContext> contextFactory, ILogge
         ColumnsToEmpty = await File.ReadAllLinesAsync("colnamesempty.txt", stoppingToken);
         TablesToEmpty = await File.ReadAllLinesAsync("tablenamesempty.txt", stoppingToken);
         var triggersDisableScript = await File.ReadAllLinesAsync("DisableTriggers.txt", stoppingToken);
+        var typeSource = await contextFactory.CreateDbContextAsync();
 
-        var members = typeof(DbContext).GetProperties();
+        var members = typeSource.GetType().GetProperties();
         var genericMethod = typeof(ScrambleService).GetMethod(nameof(ScrambleTable));
 
         List<Task> parallelTasks = new List<Task>();
-        
+
         // Disable triggers for update performance
         using (var context = await contextFactory.CreateDbContextAsync())
         {
@@ -137,6 +139,12 @@ public class ScrambleService(IDbContextFactory<DbContext> contextFactory, ILogge
                             logger.LogInformation($"Scrambled {property.ColumnName} value from [{valueInMemory}] to [{decimalScrambledValue}]");
                             setAccessor?.Invoke(dbValue, [decimalScrambledValue]);
                             break;
+                        case string _ when property.ColumnType.ToUpper().Contains("FLOAT"):
+                            var floatCastedValue = (double)valueInMemory;
+                            var floatScrambledValue = floatCastedValue.Scramble();
+                            logger.LogInformation($"Scrambled {property.ColumnName} value from [{valueInMemory}] to [{floatScrambledValue}]");
+                            setAccessor?.Invoke(dbValue, [floatScrambledValue]);
+                            break;
                         case string _ when property.ColumnType.ToUpper().Contains("DATETIME"):
                             var dateTimeCastedValue = (DateTime)valueInMemory;
                             var dateTimeScrambledValue = dateTimeCastedValue.Scramble();
@@ -153,13 +161,13 @@ public class ScrambleService(IDbContextFactory<DbContext> contextFactory, ILogge
                             logger.LogInformation($"Scrambled {property.ColumnName} value from [{boolCastedValue}] to [{boolScrambledValue}]");
                             setAccessor?.Invoke(dbValue, [boolScrambledValue]);
                             break;
-                        default: 
+                        default:
                             logger.LogError($"{property.ColumnType} is not supported");
                             return 1;
                     }
                 }
             }
-            
+
             await context.Database.CommitTransactionAsync(cancellationToken);
             logger.LogInformation("COMMIT TRANSACTION");
             await context.SaveChangesAsync(cancellationToken);

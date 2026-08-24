@@ -606,4 +606,5 @@ obj/
 
 *.txt
 
-Models/
+Models/*.cs
+!Models/ExampleObject.cs

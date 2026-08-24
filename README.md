@@ -4,7 +4,7 @@
 
 ### Models
 
-Run command `dotnet ef dbcontext scaffold "<DatabaseConnectionString>" Microsoft.EntityFrameworkCore.SqlServer`
+Run command `dotnet ef dbcontext scaffold "<DatabaseConnectionString>" Microsoft.EntityFrameworkCore.SqlServer --output-dir Models`
 
 This will create `Models` folder with all database models and a DbContext.
 
